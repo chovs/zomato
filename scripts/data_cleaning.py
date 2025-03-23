@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def clean_missing_values(data, fill_value=None, method='mean'):
     """
@@ -127,4 +128,32 @@ def normalize_data(data, columns):
     """
     for column in columns:
         data[column] = (data[column] - data[column].min()) / (data[column].max() - data[column].min())
+    return data
+
+def group_based_imputation(data, group_column, target_column, method='median'):
+    """
+    Impute missing values in the target column based on the specified method
+    within groups defined by the group column.
+
+    Args:
+        data (pd.DataFrame): The input data.
+        group_column (str): The column to group by (e.g., 'delivery_person_id').
+        target_column (str): The column with missing values to impute (e.g., 'delivery_person_age').
+        method (str): The imputation method to use ('median' or 'mode').
+
+    Returns:
+        pd.DataFrame: DataFrame with missing values imputed.
+    """
+    if method not in ['median', 'mode']:
+        raise ValueError("Method must be 'median' or 'mode'.")
+
+    # Group by the specified column and calculate the imputation value
+    if method == 'median':
+        imputation_values = data.groupby(group_column)[target_column].transform('median')
+    else:  # method == 'mode'
+        imputation_values = data.groupby(group_column)[target_column].transform(lambda x: x.mode()[0] if not x.mode().empty else None)
+
+    # Fill missing values in the target column
+    data[target_column] = data[target_column].fillna(imputation_values)
+
     return data
